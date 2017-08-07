@@ -1,0 +1,87 @@
+{
+  "AWSTemplateFormatVersion":"2010-09-09",
+  "Description":"AWS CloudFormation Sample Template IAM_Users_Groups_and_Policies:
+  "Parameters":{
+    "Password":{
+      "NoEcho":"true",
+      "Type":"String",
+      "Description":"New account password",
+      "MinLength":"1",
+      "MaxLength":"41"
+    }
+  },
+  "Resources":{
+    "quad-cloud-user-02":{
+      "Type":"AWS::IAM::User",
+      "Properties":{
+        "LoginProfile":{"Password":{"Ref":"Password"}}
+      }
+    },
+    "Role1":{
+      "Type":"AWS::IAM::Role",
+      "Properties":{
+        "AssumeRolePolicyDocument":{
+          "Version":"2012-10-17",
+          "Statement":[{
+            "Effect":"Allow",
+            "Principal":{"Service":["ec2.amazonaws.com"]},
+            "Action":["sts:AssumeRole"]
+          }]
+        },
+        "Path":"/",
+        "Policies":[{
+          "PolicyName":"root",
+          "PolicyDocument":{
+            "Version":"2012-10-17",
+            "Statement":[{"Effect":"Allow","Action":"*","Resource":"*"}]
+          }
+        }]
+      }
+    },
+    "quad-cloud-cf-dev-02":{
+      "Type":"AWS::IAM::Group"
+    },
+    
+    "Users":{
+      "Type":"AWS::IAM::UserToGroupAddition",
+      "Properties":{
+        "GroupName":{"Ref":"quad-cloud-cf-dev-02"},
+        "Users":[{"Ref":"quad-cloud-user-02"}]
+      }
+    },
+    
+    "quad-cloud-UserPolicies":{
+      "Type":"AWS::IAM::Policy",
+      "Properties":{
+        "PolicyName":"Users",
+        "PolicyDocument":{
+          "Statement":[{
+            "Effect":"Allow",
+            "Action":["cloudformation:*"],
+            "Action":["ec2:*],
+            "Resource":"*"
+          }]
+        },
+        "Groups":[{"Ref":"quad-cloud-cf-dev-02"}],
+        "Users":[{"Ref":"quad-cloud-user-02"}],
+        "Roles":[{"Ref":"Role1"}]
+      }
+    },
+    "CFNKeys":{
+      "Type":"AWS::IAM::AccessKey",
+      "Properties":{
+        "UserName":{"Ref":"quad-cloud-user-02"}
+      }
+    }
+  },
+  "Outputs":{
+    "AccessKey":{
+      "Value":{"Ref":"CFNKeys"},
+      "Description":"AWSAccessKeyId of new user"
+    },
+    "SecretKey":{
+      "Value":{"Fn::GetAtt":["CFNKeys","SecretAccessKey"]},
+      "Description":"AWSSecretKey of new user"
+    }
+  }
+}
